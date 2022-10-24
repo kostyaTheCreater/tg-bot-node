@@ -1,8 +1,14 @@
 const telegramApi = require('node-telegram-bot-api');
 
-const {token} = require('./config');
+const {token, url} = require('./config');
 
-const bot = new telegramApi(token, {polling: true});
+const bot = new telegramApi(token,  {
+    webHook: {
+        port: 3000
+    }
+});
+
+bot.setWebHook(url);
 
 bot.setMyCommands([
     {command: '/start', description: 'Greeting'},
