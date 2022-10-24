@@ -1,5 +1,6 @@
 const telegramApi = require('node-telegram-bot-api');
 const {token, url, port} = require('./config');
+const {trelloToken, trelloApiKey} = require('./trelloConfig');
 const Pool = require("pg").Pool;
 
 const pool = new Pool({
@@ -33,7 +34,8 @@ bot.on('message', async (msg) => {
         return bot.sendMessage(chatId, `Hello, ${firstName}`);
     }
     if(text == '/info'){
-        return bot.sendMessage(chatId, `Ur name is ${firstName}?`);
+        trelloConnect(chatId);
+        return;
     }
     return bot.sendMessage(chatId, "I dont know, how answer on this");
 })
@@ -54,4 +56,30 @@ function dbConnect(firstName, userId){
     }catch(e){
         console.log(e);
     }
+}
+
+function trelloConnect(chatId){
+    fetch(`https://api.trello.com/1/boards/NXqNnhNf/actions?key=${trelloApiKey}&token=${trelloToken}`, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json'
+        }
+        }).then(response => {
+            console.log(`Response: ${response.status} ${response.statusText}`);
+            return response.text();
+        }).then(text => {
+            const actionsBoard = JSON.parse(text);
+            for(let findChanges of actionsBoard){
+                
+                if(findChanges.type == "updateCard"){
+                    const checkChanges = findChanges.data;
+                    const cardName = checkChanges.card.name;
+
+                    if('listAfter' in checkChanges){
+                        const listName = checkChanges.listAfter.name;
+                        return bot.sendMessage(chatId, `Card: "${cardName}" was move to list "${listName}"`);
+                    }
+                }
+            }
+        }).catch(err => console.error(err));
 }
